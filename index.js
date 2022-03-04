@@ -2,14 +2,16 @@
 const { Engine, Render, Runner, World, Bodies, Body, Events } = Matter;
 
 // Number of cells in the grid
-const cells = 10;
+const cellsHorizontal = 10;
+const cellsVertical = 8;
 
-// Define width and height of our world
-const width = 600;
-const height = 600;
+// Make sure the maze takes as much of the window as possible
+const width = window.innerWidth;
+const height = window.innerHeight;
 
 // Get the length of each cell
-const unitLength = width / cells;
+const unitLengthX = width / cellsHorizontal;
+const unitLengthY = width / cellsVertical;
 
 // Initialize main elements.
 const engine = Engine.create();
@@ -19,7 +21,7 @@ const render = Render.create({
     element: document.body,
     engine: engine,
     options: {
-        wireframes: true,
+        wireframes: false,
         width,
         height
     }
@@ -65,25 +67,25 @@ const shuffle = arr => {
   return arr;
 };
 
-// Maze generation (3x3 grid full of false values)
-const grid = Array(cells)
+// Maze generation (grid full of false values for now)
+const grid = Array(cellsVertical)
     .fill(null)
-    .map(() => Array(cells).fill(false));
+    .map(() => Array(cellsHorizontal).fill(false));
 
 // Create vertical 'walls' inside the maze by tracking them via a 3x2 array
-const verticals = Array(cells)
+const verticals = Array(cellsVertical)
     .fill(null)
-    .map(() => Array(cells-1).fill(false));
+    .map(() => Array(cellsHorizontal-1).fill(false));
 
 // Create horizontal 'walls' inside the maze by tracking them via a 2x3 array
-const horizontals = Array(cells-1)
+const horizontals = Array(cellsVertical-1)
     .fill(null)
-    .map(() => Array(cells).fill(false));
+    .map(() => Array(cellsHorizontal).fill(false));
 
 
 //// Pick a random cells to start building the maze walls
-const startRow = Math.floor(Math.random() * cells);
-const startColumn = Math.floor(Math.random() * cells);
+const startRow = Math.floor(Math.random() * cellsVertical);
+const startColumn = Math.floor(Math.random() * cellsHorizontal);
 
 
 const stepThroughCell = (row, column) => {
@@ -114,9 +116,9 @@ const stepThroughCell = (row, column) => {
     // See if the neighbor is out of bounds, if so, continue to next neighbor.
     if (
       nextRow < 0 ||
-      nextRow >= cells ||
+      nextRow >= cellsVertical ||
       nextColumn < 0 ||
-      nextColumn >= cells
+      nextColumn >= cellsHorizontal
     ) {
       continue;
     }
@@ -153,13 +155,16 @@ horizontals.forEach((row, rowIndex) => {
     }
 
     const wall = Bodies.rectangle(
-      columnIndex * unitLength + unitLength / 2,
-      rowIndex * unitLength + unitLength,
-      unitLength,
+      columnIndex * unitLengthX + unitLengthX / 2,
+      rowIndex * unitLengthY + unitLengthY,
+      unitLengthX,
       5,
       {
         label: 'wall',
-        isStatic: true
+        isStatic: true,
+        render: {
+          fillStyle: 'red'
+        }
       }
     );
     World.add(world, wall);
@@ -173,13 +178,16 @@ verticals.forEach((row, rowIndex) => {
     }
 
     const wall = Bodies.rectangle(
-      columnIndex * unitLength + unitLength,
-      rowIndex * unitLength + unitLength / 2,
+      columnIndex * unitLengthX + unitLengthX,
+      rowIndex * unitLengthY + unitLengthY / 2,
       5,
-      unitLength,
+      unitLengthY,
       {
         label: 'wall',
-        isStatic: true
+        isStatic: true,
+        render: {
+          fillStyle: 'red'
+        }
       }
     );
     World.add(world, wall);
@@ -188,12 +196,17 @@ verticals.forEach((row, rowIndex) => {
 
 // Goal of the maze
 const goal = Bodies.rectangle(
-    width - unitLength / 2,
-    height - unitLength / 2,
-    unitLength * 0.7,
-    unitLength * 0.7,
-    {isStatic: true,
-     label: 'goal'}
+    width - unitLengthX / 2,
+    height - unitLengthY / 2,
+    unitLengthX * 0.7,
+    unitLengthY * 0.7,
+    {
+      isStatic: true,
+      label: 'goal',
+      render: {
+      fillStyle: 'green'
+    }
+  }
 );
 World.add(world, goal);
 
@@ -205,8 +218,9 @@ Events.on(engine, 'collisionStart', event => {
         // so we have to check like this
         if (labels.includes(collision.bodyA.label) && 
             labels.includes(collision.bodyB.label)) {
-                // As a win animation, make the player fall and
-                // destroy the walls.
+                // As a win animation, make the player fall,
+                // destroy the walls and show a message.
+                document.querySelector('.winner').classList.remove('hidden');
                 world.gravity.y = 1;
                 world.bodies.forEach(body => {
                     if (body.label === 'wall') {
@@ -219,11 +233,17 @@ Events.on(engine, 'collisionStart', event => {
 
 
 // Ball (player's avatar)
+const ballRadius = Math.min(unitLengthX, unitLengthY) / 4;
 const ball = Bodies.circle(
-    unitLength / 2,
-    unitLength / 2,
-    unitLength / 4,
-    {label: 'ball'}
+    unitLengthX / 2,
+    unitLengthY / 2,
+    ballRadius,
+    {
+      label: 'ball',
+      render: {
+          fillStyle: 'blue'
+      }
+    }
 );
 World.add(world, ball);
 
